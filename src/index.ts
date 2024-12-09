@@ -11,8 +11,25 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
+
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
+		const response = await fetch('https://api.irail.be/connections/?from=Leuven&to=Brussels-Central&format=json');
+		const trains: { connection: any[] } = await response.json();
+
+		const data = {
+			frames: trains.connection.slice(0, 3).map((train) => {
+				const departureTime = new Date(train.departure.time * 1000).toLocaleTimeString('en-GB', { timeZone: 'Europe/Brussels', hour12: false, hour: '2-digit', minute: '2-digit' });
+				const arrivalTime = new Date(train.arrival.time * 1000).toLocaleTimeString('en-GB', { timeZone: 'Europe/Brussels', hour12: false, hour: '2-digit', minute: '2-digit' });
+				const platform = train.departure.platform;
+
+				return {
+					text: `${departureTime} (${platform}) → ${arrivalTime}`,
+					icon: 64446,
+				};
+			}),
+		};
+
+		return Response.json(data);
 	},
 } satisfies ExportedHandler<Env>;
